@@ -1073,11 +1073,33 @@ let unsubscribe = null;
 let ultimaConfirmacion = [];
 
 /* ------------------------------------------------------------
+   Detección de plataforma. Se usa para:
+   1) Elegir la escala del canvas (html2canvas) al generar la
+      imagen (más liviana en Android para que la generación sea
+      rápida y no se acumule espera antes del share()).
+   2) Decidir la forma exacta del payload que se le pasa a
+      navigator.share(): en Android, combinar "files" con
+      "title"/"text" al mismo tiempo hace que numerosos
+      navegadores basados en Chromium para Android rechacen la
+      llamada (o el picker no aparezca) — en iOS/escritorio esa
+      combinación sí funciona y no se toca.
+   ------------------------------------------------------------ */
+const esAndroid = /Android/i.test(navigator.userAgent);
+
+/* ------------------------------------------------------------
    Imagen de compartir: se pre-genera en segundo plano en cuanto
    se muestra la pantalla de agradecimiento, para que al tocar
-   "Compartir" en Android navigator.share() se pueda invocar de
-   forma prácticamente inmediata (sin esperar a html2canvas) y
-   así conservar el "user gesture" que Android exige.
+   "Compartir" el navigator.share() se invoque de forma
+   SÍNCRONA dentro del mismo gesto de usuario (tap), sin ningún
+   "await" previo. Esto es crítico en Android: a diferencia de
+   iOS, Chrome para Android es muy estricto y pierde el "user
+   activation" en cuanto el manejador del click cruza un punto
+   de espera (await/then) antes de llamar a share().
+
+   Mientras la imagen no esté lista, el botón "Compartir" queda
+   deshabilitado ("Preparando imagen…") para GARANTIZAR que,
+   cuando el usuario pueda tocarlo, el blob ya exista y el click
+   no necesite esperar nada.
    ------------------------------------------------------------ */
 let blobCompartirListo = null;
 let promesaBlobCompartir = null;
@@ -1331,30 +1353,44 @@ function mostrarPantallaGracias(){
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if(unsubscribe) unsubscribe();
 
-  // Pre-generar la imagen de compartir en segundo plano, sin bloquear la UI.
+  // Pre-generar la imagen de compartir en segundo plano, sin bloquear la UI,
+  // dejando el botón "Compartir" deshabilitado hasta que esté lista.
   prepararImagenParaCompartir();
 }
 
 /* ============================================================
    PRE-GENERACIÓN DE LA IMAGEN DE COMPARTIR
    Se dispara en cuanto se muestra la pantalla de agradecimiento.
-   Guarda el blob resultante en blobCompartirListo para que el
-   botón "Compartir" pueda llamar a navigator.share() casi al
-   instante (crítico en Android, donde el user gesture expira
-   si pasa demasiado tiempo entre el tap y el share()).
+   Mientras se genera, el botón "Compartir" se deshabilita con el
+   texto "Preparando imagen…" — así, para cuando el usuario pueda
+   tocarlo, blobCompartirListo YA existe y compartirImagen() no
+   necesita esperar nada antes de llamar a navigator.share(),
+   preservando el "user gesture" que Android exige.
    ============================================================ */
 function prepararImagenParaCompartir(){
   blobCompartirListo = null;
-  const esAndroid = /Android/i.test(navigator.userAgent);
+
+  const btnCompartir = document.getElementById('btn-compartir');
+  const textoOriginal = btnCompartir.dataset.textoOriginal || btnCompartir.textContent;
+  btnCompartir.dataset.textoOriginal = textoOriginal;
+  btnCompartir.disabled = true;
+  btnCompartir.textContent = 'Preparando imagen...';
 
   promesaBlobCompartir = generarImagenTarjeta(esAndroid ? 2 : 3)
     .then(blob => {
       blobCompartirListo = blob;
+      btnCompartir.disabled = false;
+      btnCompartir.textContent = textoOriginal;
       return blob;
     })
     .catch(err => {
       console.error('Error pre-generando la imagen para compartir:', err);
       promesaBlobCompartir = null;
+      // Aun si falló la pre-generación, habilitamos el botón para que el
+      // usuario pueda intentarlo bajo demanda (mejor esfuerzo) en vez de
+      // quedar bloqueado sin opción.
+      btnCompartir.disabled = false;
+      btnCompartir.textContent = textoOriginal;
       return null;
     });
 }
@@ -1408,27 +1444,53 @@ async function generarImagenTarjeta(escala){
 
 /* ============================================================
    COMPARTIR IMAGEN
-   Si la imagen ya fue pre-generada (blobCompartirListo), se usa
-   de inmediato y navigator.share() se invoca prácticamente en
-   el mismo tick del clic, preservando el "user gesture" que
-   Android exige. Si aún no está lista, se espera la generación
-   en curso (o se genera on-demand) antes de compartir.
-   Misma lógica en TODAS las plataformas (iPhone, PC y Android):
-   generar/obtener el blob, envolverlo en un File y pedir a
-   navigator.share que abra el menú nativo. Sin carreras de
-   tiempo (setTimeout race) contra el share.
+
+   Puntos clave del fix para Android:
+
+   1) CERO "await" antes de navigator.share() cuando el blob ya
+      está listo (caso normal, gracias a la pre-generación con
+      botón deshabilitado). Esto es indispensable en Chrome para
+      Android: si el manejador del click cruza un punto de espera
+      antes de invocar share(), el navegador ya no lo reconoce
+      como parte del gesto del usuario y la llamada falla o el
+      picker nunca aparece — a diferencia de iOS Safari, que es
+      más permisivo con esto.
+
+   2) En Android, el payload de share() SOLO incluye "files"
+      (sin "title" ni "text"). Combinar archivos con texto/título
+      es una causa frecuente de que numerosos navegadores
+      Chromium para Android rechacen silenciosamente la llamada
+      o no abran el picker nativo, aun cuando el archivo por sí
+      solo sí es compartible. En iPhone/PC se mantiene intacto el
+      comportamiento actual (que ya funciona) incluyendo
+      title + text.
+
+   3) Se usa navigator.canShare() como verificación best-effort
+      (envuelta en try/catch) antes de llamar a share(): si existe
+      y confirma soporte, lo usamos como señal; si no existe o
+      lanza un error, no bloqueamos el intento — simplemente
+      seguimos adelante e intentamos share() de todas formas,
+      dejando que el propio share() sea la fuente de verdad.
    ============================================================ */
 async function compartirImagen(){
   const btn = document.getElementById('btn-compartir');
-  const textoOriginal = btn.textContent;
+  const textoOriginal = btn.dataset.textoOriginal || btn.textContent;
   btn.disabled = true;
-
-  const esAndroid = /Android/i.test(navigator.userAgent);
 
   try{
     let blob = blobCompartirListo;
 
-    if(!blob){
+    // Camino normal: el blob ya está listo (pre-generado) y no hace
+    // falta ningún await antes de invocar navigator.share().
+    if(blob){
+      const compartido = await intentarWebShare(blob);
+      if(compartido) return;
+    } else {
+      // Camino de emergencia (pre-generación falló o aún no termina):
+      // aquí sí hay una espera antes de share(), por lo que en Android
+      // es posible que se pierda el gesto del usuario y el picker no
+      // aparezca. Aun así lo intentamos; si falla, cae al fallback de
+      // descarga con un mensaje claro.
       btn.textContent = 'Generando...';
       if(promesaBlobCompartir){
         blob = await promesaBlobCompartir;
@@ -1437,23 +1499,8 @@ async function compartirImagen(){
         blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
         blobCompartirListo = blob;
       }
-    }
-
-    const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
-
-    // Intentamos compartir SIN depender de canShare (falla mucho en Android)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          files: [archivo],
-          title: 'Baby Shower de Esmeralda',
-          text: '¡Gracias por tu detalle para Esmeralda! 💕'
-        });
-        return; // éxito
-      } catch (err) {
-        if (err && err.name === 'AbortError') return; // usuario canceló
-        console.warn('Share con archivo falló, intentando fallback...', err);
-      }
+      const compartido = await intentarWebShare(blob);
+      if(compartido) return;
     }
 
     // Fallback: descargar
@@ -1476,6 +1523,42 @@ async function compartirImagen(){
   }
 }
 
+/* Intenta abrir el picker nativo de compartir con el blob dado.
+   Devuelve true si se compartió (o el usuario canceló, lo cual
+   también se considera "manejado"), false si hay que caer al
+   fallback de descarga. */
+async function intentarWebShare(blob){
+  if(!navigator.share) return false;
+
+  const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
+
+  // En Android: SOLO el archivo, sin title/text (ver comentario arriba).
+  // En iOS/PC: se mantiene el payload original con title + text.
+  const shareData = esAndroid
+    ? { files: [archivo] }
+    : {
+        files: [archivo],
+        title: 'Baby Shower de Esmeralda',
+        text: '¡Gracias por tu detalle para Esmeralda! 💕'
+      };
+
+  // Verificación best-effort: si canShare existe y dice que NO se puede,
+  // no perdemos tiempo llamando a share() (que fallaría de inmediato).
+  // Si no existe o lanza, no bloqueamos — dejamos que share() decida.
+  try{
+    if(navigator.canShare && !navigator.canShare(shareData)) return false;
+  }catch(e){ /* algunos navegadores lanzan aquí; ignoramos y seguimos */ }
+
+  try{
+    await navigator.share(shareData);
+    return true; // éxito
+  } catch (err) {
+    if (err && err.name === 'AbortError') return true; // el usuario canceló, no es un error
+    console.warn('navigator.share falló, se usará el fallback de descarga...', err);
+    return false;
+  }
+}
+
 async function descargarImagen(){
   const btn = document.getElementById('btn-descargar');
   btn.disabled = true;
@@ -1484,7 +1567,6 @@ async function descargarImagen(){
   try{
     let blob = blobCompartirListo;
     if(!blob){
-      const esAndroid = /Android/i.test(navigator.userAgent);
       if(promesaBlobCompartir){
         blob = await promesaBlobCompartir;
       }
