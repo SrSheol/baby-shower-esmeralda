@@ -1441,34 +1441,36 @@ async function compartirImagen(){
 
     const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
 
-    if(navigator.canShare && navigator.canShare({ files: [archivo] })){
-      await navigator.share({
-        files: [archivo],
-        title: 'Baby Shower de Esmeralda',
-        text: '¡Gracias por tu detalle para Esmeralda! 💕'
-      });
-    } else {
-      // Este dispositivo no soporta compartir archivos: descarga directa.
-      descargarBlob(blob);
-      alert('Tu navegador no permite compartir imágenes directamente. Se descargó la imagen; ábrela desde tu galería para compartirla por WhatsApp.');
+    // Intentamos compartir SIN depender de canShare (falla mucho en Android)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          files: [archivo],
+          title: 'Baby Shower de Esmeralda',
+          text: '¡Gracias por tu detalle para Esmeralda! 💕'
+        });
+        return; // éxito
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // usuario canceló
+        console.warn('Share con archivo falló, intentando fallback...', err);
+      }
     }
-  }catch(err){
-    if(err && err.name === 'AbortError'){
-      // El usuario cerró el menú de compartir sin elegir nada: no es un error.
-      btn.disabled = false;
-      btn.textContent = textoOriginal;
-      return;
-    }
+
+    // Fallback: descargar
+    descargarBlob(blob);
+    alert('Imagen guardada.\nÁbrela desde Galería o Archivos y compártela por WhatsApp.');
+
+  } catch (err) {
     console.error(err);
-    try{
+    try {
       const blobFallback = blobCompartirListo || await generarImagenTarjeta(2);
       descargarBlob(blobFallback);
-      alert('No se pudo abrir el menú para compartir, así que descargamos la imagen. Ábrela desde tu galería o archivos para compartirla por WhatsApp.');
-    }catch(e){
+      alert('Se descargó la imagen. Ábrela desde Galería para compartirla por WhatsApp.');
+    } catch (e) {
       console.error(e);
       alert('No pudimos generar la imagen. Intenta de nuevo.');
     }
-  }finally{
+  } finally {
     btn.disabled = false;
     btn.textContent = textoOriginal;
   }
