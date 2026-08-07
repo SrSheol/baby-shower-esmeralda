@@ -1534,30 +1534,55 @@ async function compartirImagen(){
   btn.disabled = true;
   const textoOriginal = btn.textContent;
   btn.textContent = 'Generando...';
+
   try{
     const blob = await generarImagenTarjeta();
     const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
 
-    if(navigator.canShare && navigator.canShare({ files: [archivo] })){
-      await navigator.share({
-        files: [archivo],
-        title: 'Baby Shower de Esmeralda',
-        text: '¡Gracias por tu detalle para Esmeralda! 💕'
-      });
-    }else{
-      // Fallback: descarga directa si no hay Web Share API con archivos
-      descargarBlob(blob);
+    // Detectar si es Android
+    const esAndroid = /Android/i.test(navigator.userAgent);
+
+    // En Android intentamos compartir directo (sin confiar tanto en canShare)
+    // En iPhone y PC mantenemos la lógica que ya te funciona bien
+    if (esAndroid) {
+      try {
+        await navigator.share({
+          files: [archivo],
+          title: 'Baby Shower de Esmeralda',
+          text: '¡Gracias por tu detalle para Esmeralda! 💕'
+        });
+      } catch (err) {
+        // Si falla el share en Android, descarga la imagen
+        if (err.name !== 'AbortError') {
+          descargarBlob(blob);
+          alert('Imagen guardada. Ábrela desde Galería o Archivos y compártela por WhatsApp.');
+        }
+      }
+    } else {
+      // iPhone y PC (lo que ya te funciona bien)
+      if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+        await navigator.share({
+          files: [archivo],
+          title: 'Baby Shower de Esmeralda',
+          text: '¡Gracias por tu detalle para Esmeralda! 💕'
+        });
+      } else {
+        descargarBlob(blob);
+      }
     }
-  }catch(err){
-    if(err.name !== 'AbortError'){
+
+  } catch (err) {
+    if (err.name !== 'AbortError') {
       console.error(err);
-      alert('No pudimos compartir la imagen automáticamente. Se descargará en su lugar.');
-      try{
+      try {
         const blob = await generarImagenTarjeta();
         descargarBlob(blob);
-      }catch(e){ console.error(e); }
+        alert('No se pudo compartir. Se descargó la imagen.');
+      } catch (e) {
+        console.error(e);
+      }
     }
-  }finally{
+  } finally {
     btn.disabled = false;
     btn.textContent = textoOriginal;
   }
