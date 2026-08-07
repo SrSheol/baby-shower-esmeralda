@@ -1072,6 +1072,16 @@ let seleccion = {};
 let unsubscribe = null;
 let ultimaConfirmacion = [];
 
+/* ------------------------------------------------------------
+   Imagen de compartir: se pre-genera en segundo plano en cuanto
+   se muestra la pantalla de agradecimiento, para que al tocar
+   "Compartir" en Android navigator.share() se pueda invocar de
+   forma prácticamente inmediata (sin esperar a html2canvas) y
+   así conservar el "user gesture" que Android exige.
+   ------------------------------------------------------------ */
+let blobCompartirListo = null;
+let promesaBlobCompartir = null;
+
 (function initIntro(){
   const overlay = document.getElementById('intro-overlay');
   if(!overlay) return;
@@ -1320,6 +1330,33 @@ function mostrarPantallaGracias(){
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if(unsubscribe) unsubscribe();
+
+  // Pre-generar la imagen de compartir en segundo plano, sin bloquear la UI.
+  prepararImagenParaCompartir();
+}
+
+/* ============================================================
+   PRE-GENERACIÓN DE LA IMAGEN DE COMPARTIR
+   Se dispara en cuanto se muestra la pantalla de agradecimiento.
+   Guarda el blob resultante en blobCompartirListo para que el
+   botón "Compartir" pueda llamar a navigator.share() casi al
+   instante (crítico en Android, donde el user gesture expira
+   si pasa demasiado tiempo entre el tap y el share()).
+   ============================================================ */
+function prepararImagenParaCompartir(){
+  blobCompartirListo = null;
+  const esAndroid = /Android/i.test(navigator.userAgent);
+
+  promesaBlobCompartir = generarImagenTarjeta(esAndroid ? 2 : 3)
+    .then(blob => {
+      blobCompartirListo = blob;
+      return blob;
+    })
+    .catch(err => {
+      console.error('Error pre-generando la imagen para compartir:', err);
+      promesaBlobCompartir = null;
+      return null;
+    });
 }
 
 /* ============================================================
@@ -1371,28 +1408,37 @@ async function generarImagenTarjeta(escala){
 
 /* ============================================================
    COMPARTIR IMAGEN
+   Si la imagen ya fue pre-generada (blobCompartirListo), se usa
+   de inmediato y navigator.share() se invoca prácticamente en
+   el mismo tick del clic, preservando el "user gesture" que
+   Android exige. Si aún no está lista, se espera la generación
+   en curso (o se genera on-demand) antes de compartir.
    Misma lógica en TODAS las plataformas (iPhone, PC y Android):
-   generar el blob, envolverlo en un File y pedir a
+   generar/obtener el blob, envolverlo en un File y pedir a
    navigator.share que abra el menú nativo. Sin carreras de
-   tiempo (setTimeout race) contra el share: eso era lo que
-   provocaba que en Android, apenas unos segundos después de
-   abrir el picker, se disparara el fallback de descarga por
-   "timeout" aunque el share siguiera en curso.
-   En Android se usa una escala de captura más moderada (2x en
-   vez de 3x) porque los WebViews de Android suelen tener menos
-   memoria disponible para canvases grandes; esto es solo una
-   optimización de generación, no cambia el flujo de compartir.
+   tiempo (setTimeout race) contra el share.
    ============================================================ */
 async function compartirImagen(){
   const btn = document.getElementById('btn-compartir');
   const textoOriginal = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Generando...';
 
   const esAndroid = /Android/i.test(navigator.userAgent);
 
   try{
-    const blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
+    let blob = blobCompartirListo;
+
+    if(!blob){
+      btn.textContent = 'Generando...';
+      if(promesaBlobCompartir){
+        blob = await promesaBlobCompartir;
+      }
+      if(!blob){
+        blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
+        blobCompartirListo = blob;
+      }
+    }
+
     const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
 
     if(navigator.canShare && navigator.canShare({ files: [archivo] })){
@@ -1415,8 +1461,8 @@ async function compartirImagen(){
     }
     console.error(err);
     try{
-      const blob = await generarImagenTarjeta(2);
-      descargarBlob(blob);
+      const blobFallback = blobCompartirListo || await generarImagenTarjeta(2);
+      descargarBlob(blobFallback);
       alert('No se pudo abrir el menú para compartir, así que descargamos la imagen. Ábrela desde tu galería o archivos para compartirla por WhatsApp.');
     }catch(e){
       console.error(e);
@@ -1434,8 +1480,17 @@ async function descargarImagen(){
   const textoOriginal = btn.textContent;
   btn.textContent = 'Generando...';
   try{
-    const esAndroid = /Android/i.test(navigator.userAgent);
-    const blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
+    let blob = blobCompartirListo;
+    if(!blob){
+      const esAndroid = /Android/i.test(navigator.userAgent);
+      if(promesaBlobCompartir){
+        blob = await promesaBlobCompartir;
+      }
+      if(!blob){
+        blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
+        blobCompartirListo = blob;
+      }
+    }
     descargarBlob(blob);
   }catch(err){
     console.error(err);
