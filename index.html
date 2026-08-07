@@ -1512,27 +1512,23 @@ function mostrarPantallaGracias(){
 /* ============================================================
    GENERAR IMAGEN CON html2canvas + COMPARTIR / DESCARGAR
    ============================================================ */
-async function generarImagenTarjeta(){
+async function generarImagenTarjeta(escala = 3){
   const nodo = document.getElementById('tarjeta-exportable');
-
-  // Pequeño delay para que el navegador termine de renderizar
-  await new Promise(r => setTimeout(r, 350));
-
+  await new Promise(r => setTimeout(r, 250));
   const canvas = await html2canvas(nodo, {
-    scale: 3,
+    scale: escala,
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#fff6f9',
     logging: false,
-    imageTimeout: 40000,
+    imageTimeout: 30000,
     width: nodo.offsetWidth,
     height: nodo.offsetHeight,
     scrollX: 0,
     scrollY: 0
   });
-
   return new Promise(resolve => {
-    canvas.toBlob(blob => resolve(blob), 'image/png', 0.92);
+    canvas.toBlob(blob => resolve(blob), 'image/png', 0.9);
   });
 }
 
@@ -1541,45 +1537,48 @@ async function compartirImagen(){
   btn.disabled = true;
   const textoOriginal = btn.textContent;
   btn.textContent = 'Generando...';
-
+  const esAndroid = /Android/i.test(navigator.userAgent);
   try {
-    const blob = await generarImagenTarjeta();
+    // En Android usamos escala más baja para que no se quede colgado
+    const blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
     const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
-
-    // Intento principal: compartir con archivo (funciona en iPhone y en muchos Android)
-    if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-      await navigator.share({
-        files: [archivo],
-        title: 'Baby Shower de Esmeralda',
-        text: '¡Gracias por tu detalle para Esmeralda! 💕'
-      });
+    if (esAndroid) {
+      // Android: intentamos compartir directo, con tiempo límite
+      try {
+        const compartir = navigator.share({
+          files: [archivo],
+          title: 'Baby Shower de Esmeralda',
+          text: '¡Gracias por tu detalle para Esmeralda! 💕'
+        });
+        // Si en 4 segundos no responde, bajamos la imagen
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 4000)
+        );
+        await Promise.race([compartir, timeout]);
+      } catch (err) {
+        if (err.name === 'AbortError') return; // el usuario canceló
+        // Fallback: descargar
+        descargarBlob(blob);
+        alert('Imagen guardada.\nÁbrela desde Galería o Archivos y compártela por WhatsApp.');
+      }
     } else {
-      // Fallback: descarga (útil cuando Android no permite share de archivos)
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'baby-shower-esmeralda.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert('Imagen guardada. Ábrela desde Galería o Archivos y compártela por WhatsApp.');
+      // iPhone y PC (lo que ya funciona bien)
+      if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+        await navigator.share({
+          files: [archivo],
+          title: 'Baby Shower de Esmeralda',
+          text: '¡Gracias por tu detalle para Esmeralda! 💕'
+        });
+      } else {
+        descargarBlob(blob);
+      }
     }
-
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.error(err);
       try {
-        const blob = await generarImagenTarjeta();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'baby-shower-esmeralda.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const blob = await generarImagenTarjeta(2);
+        descargarBlob(blob);
         alert('No se pudo compartir. Se descargó la imagen.');
       } catch (e) {
         console.error(e);
