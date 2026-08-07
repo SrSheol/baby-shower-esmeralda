@@ -45,8 +45,6 @@
 html,body{margin:0; padding:0;}
 
 html{
-  /* Mismo fondo base que body para que no exista ninguna línea de corte
-     entre el "canvas" del documento y el contenido al hacer scroll */
   background: var(--pink-bg);
   overflow-x:hidden;
   width:100%;
@@ -55,10 +53,6 @@ html{
 body{
   font-family:'Poppins', sans-serif;
   color: var(--brown-text);
-  /* position:relative convierte a body en el contenedor de referencia
-     general de la página. El marco decorativo real vive dentro de
-     .pagina-clip (ver más abajo), que es quien controla el recorte
-     para evitar cualquier barra de desplazamiento extra. */
   position:relative;
   background:
     radial-gradient(circle at 8% 10%, rgba(248,215,227,0.7) 0%, transparent 42%),
@@ -75,8 +69,6 @@ body{
   max-width:100%;
 }
 
-/* Viñeta muy sutil, fija a la ventana, que oscurece levemente las
-   esquinas para dar profundidad sin alterar el tono rosa pastel */
 body::before{
   content:"";
   position:fixed;
@@ -86,15 +78,6 @@ body::before{
   background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(125,95,79,0.06) 100%);
 }
 
-/* ============================================================
-   CONTENEDOR DE RECORTE DE PÁGINA
-   Envuelve el marco decorativo (PNG) y el contenido (.wrap).
-   overflow:hidden aquí es lo que evita que el "sangrado" de las
-   decoraciones (offsets negativos, scale de la escena de
-   bienvenida) agrande el área de scroll del documento y genere
-   una barra de desplazamiento adicional. Su tamaño lo define el
-   contenido normal (.wrap), igual que antes.
-   ============================================================ */
 .pagina-clip{
   position:relative;
   z-index:0;
@@ -102,7 +85,6 @@ body::before{
   overflow:hidden;
 }
 
-/* ---- Decoración flotante: estrellas / corazones sutiles (confeti) ---- */
 .floaters{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;}
 .floaters span{
   position:absolute; opacity:0.35; font-size:22px;
@@ -120,21 +102,6 @@ body::before{
   *{animation-duration:0.001ms !important; animation-iteration-count:1 !important;}
 }
 
-/* ============================================================
-   MARCO DECORATIVO — flores, regalos, biberón, chupón, osito,
-   globos y estrellas rodeando el contenido con PNG transparentes.
-   position:absolute dentro de .pagina-clip (que es position:relative
-   y overflow:hidden), así el marco crece exactamente al alto real
-   del contenido y cualquier sangrado queda recortado ahí mismo,
-   sin afectar el alto/ancho de scroll de toda la página.
-
-   DISTRIBUCIÓN POR ESCENA:
-   En vez de duplicar el marcado, todo el contenedor se reescala
-   levemente desde su centro según la escena activa: en la
-   bienvenida se "abre" un poco (más aire entre piezas y más
-   distancia del contenido) y en la zona de productos se "cierra"
-   levemente (piezas más próximas entre sí, marco más continuo).
-   ============================================================ */
 .marco-decorativo{
   position:absolute;
   inset:0;
@@ -163,17 +130,6 @@ body.escena-productos .marco-decorativo{
   scale: 1;
 }
 
-/* ============================================================
-   ANIMACIONES DE LAS DECORACIONES
-   Se animan las propiedades independientes `translate`, `rotate`
-   y `scale` (NO `transform`), para que se compongan sin pisar la
-   rotación fija que cada imagen ya trae en su `transform:rotate()`
-   inline. Así cada pieza conserva su ángulo original y además
-   flota/se balancea con delicadeza.
-   Dos variantes: una para la pantalla de bienvenida (flotar) y
-   otra distinta para la zona de productos (balanceo + respiración
-   muy sutil), controladas por una clase en <body>.
-   ============================================================ */
 body.escena-bienvenida .marco-decorativo img{
   animation-name: flotarBienvenida;
   animation-timing-function: ease-in-out;
@@ -186,11 +142,9 @@ body.escena-productos .marco-decorativo img{
   animation-iteration-count: infinite;
   animation-duration: 7s;
 }
-/* Balanceo extra para los globos, como si el aire los meciera */
 body.escena-bienvenida .deco-globos-atado{ animation-name: flotarGloboBienvenida; }
 body.escena-productos .deco-globos-atado{ animation-name: balancearGloboProductos; }
 
-/* Variación orgánica de tiempos para que no se muevan todas al unísono */
 .marco-decorativo img:nth-child(3n){ animation-delay: 0.6s; animation-duration: 7.4s; }
 .marco-decorativo img:nth-child(3n+1){ animation-delay: 1.3s; animation-duration: 6.6s; }
 .marco-decorativo img:nth-child(3n+2){ animation-delay: 0.2s; animation-duration: 6.9s; }
@@ -222,39 +176,32 @@ body.escena-productos .deco-globos-atado{ animation-name: balancearGloboProducto
   .marco-decorativo{ transition:none !important; }
 }
 
-/* Flores: todas grandes y visibles, con variación de tamaño para dar relieve — 240/280/320px en escritorio (+50px) */
 .deco-flor{ width: 280px; }
 .deco-flor.flor-sm{ width: 240px; }
 .deco-flor.flor-md{ width: 280px; }
 .deco-flor.flor-lg{ width: 320px; }
 
-/* Regalos: distribuidos en los espacios vacíos entre flores, en 3 tamaños — agrandados */
 .deco-regalo{ width: 170px; }
 .deco-regalo.regalo-sm{ width: 140px; }
 .deco-regalo.regalo-md{ width: 170px; }
 .deco-regalo.regalo-lg{ width: 200px; }
 
-/* Globos: atados encima de cada regalo, tamaño proporcional al regalo que acompañan — agrandados */
 .deco-globos-atado{ width: 150px; z-index:2; }
 .deco-globos-atado.atado-sm{ width: 118px; }
 .deco-globos-atado.atado-md{ width: 150px; }
 .deco-globos-atado.atado-lg{ width: 180px; }
 
-/* Objetos del marco: biberón, chupón, osito — biberón y osito agrandados */
 .deco-objeto{ width: 100px; }
 .deco-objeto.biberon-obj{ width: 140px; }
 .deco-objeto.osito{ width: 168px; }
 
-/* Estrellas entre el borde y el contenido, rotaciones variadas */
 .deco-estrella{ width: 48px; opacity: 0.9; }
 
-/* Ocultar decoraciones laterales cuando no hay espacio (pantallas angostas) */
 .solo-escritorio{ display:none; }
 @media (min-width: 1040px){
   .solo-escritorio{ display:block; }
 }
 
-/* Reducir tamaño de decoraciones en móvil, sin amontonar */
 @media (max-width: 640px){
   .deco-flor{ width: 130px; }
   .deco-flor.flor-sm{ width: 108px; }
@@ -276,13 +223,9 @@ body.escena-productos .deco-globos-atado{ animation-name: balancearGloboProducto
   .deco-objeto.osito{ width: 78px; }
   .deco-estrella{ width: 26px; }
 
-  /* Escala general del marco más contenida en móvil, para que las
-     piezas no se amontonen sobre el contenido */
   body.escena-bienvenida .marco-decorativo{ transform: scale(0.86); }
   body.escena-productos .marco-decorativo{ transform: scale(0.72); }
 
-  /* Piezas secundarias que sólo suman ruido visual en pantallas
-     angostas: se ocultan para dejar un marco limpio y legible */
   .reducir-movil{ display:none !important; }
 }
 
@@ -294,7 +237,6 @@ body.escena-productos .deco-globos-atado{ animation-name: balancearGloboProducto
   width:100%;
 }
 
-/* ---- Encabezado tipo invitación ---- */
 .header-card{
   background: linear-gradient(180deg, #ffffff 0%, var(--pink-paper) 100%);
   border-radius: var(--radius-lg);
@@ -345,7 +287,6 @@ h1.nombre{
   margin: 0 auto 6px;
   line-height:1.65;
 }
-/* Línea divisoria muy sutil, tipo relieve, bajo el subtítulo */
 .subtitulo::after{
   content:"";
   display:block;
@@ -371,7 +312,6 @@ h1.nombre{
   box-shadow: 0 3px 8px rgba(216,110,155,0.14), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
-/* ---- Pantalla: ingreso de nombre ---- */
 .card{
   background: linear-gradient(180deg, #ffffff 0%, var(--pink-paper) 100%);
   border-radius: var(--radius-lg);
@@ -390,7 +330,6 @@ h1.nombre{
   margin:0 0 8px;
   text-align:center;
 }
-/* Pequeño divisor de relieve bajo cada título de tarjeta */
 .card h2::after{
   content:"";
   display:block;
@@ -451,7 +390,6 @@ input[type="text"]:focus{
   box-shadow: 0 4px 12px rgba(216,110,155,0.14), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
-/* ---- Grid de productos ---- */
 .saludo-invitado{
   text-align:center;
   font-size:15px;
@@ -545,7 +483,6 @@ input[type="text"]:focus{
   text-align:center; font-size:14px; font-weight:500; color:var(--brown-text); margin-top:8px;
 }
 
-/* ---- Pantalla de agradecimiento ---- */
 .gracias-card{ text-align:center; }
 .gracias-emoji{ font-size:52px; margin-bottom:6px;}
 .gracias-card h2{ font-size:28px; }
@@ -572,24 +509,6 @@ input[type="text"]:focus{
   display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
 }
 
-/* ============================================================
-   TARJETA OCULTA PARA EXPORTAR A IMAGEN (html2canvas)
-   Rediseño 100% rosa pastel, cute y coherente con el resto de la
-   página (mismos tonos, misma tipografía Playfair Display +
-   Poppins). Toda la decoración usa las MISMAS imágenes PNG que
-   el marco decorativo de la página principal (flores, regalo,
-   globos, osito, biberón, chupón y estrellas), colocadas en las
-   esquinas y bordes de la tarjeta para mantener coherencia visual
-   con el resto del sitio.
-
-   Notas de estabilidad para html2canvas:
-   - Fondo con linear-gradient simple (sin radiales múltiples),
-     más predecible en el snapshot.
-   - Sin overflow:hidden combinado con border-radius en el
-     contenedor raíz (evita bordes manchados); el recorte de la
-     decoración se hace en su propio wrapper interno.
-   - Sombra del contenedor en una sola capa.
-   ============================================================ */
 #tarjeta-exportable{
   position:fixed; left:-9999px; top:0;
   width:680px;
@@ -600,11 +519,6 @@ input[type="text"]:focus{
   box-shadow: 0 20px 44px rgba(209,79,134,0.22);
 }
 
-/* Decoración de esquinas/acentos — mismas imágenes PNG del marco
-   decorativo principal (flores, regalo, globos, osito, biberón,
-   chupón y estrellas). Tamaños triplicados (3×) respecto a la
-   versión original para mayor presencia visual en la tarjeta
-   exportada; posiciones reajustadas para evitar amontonamiento. */
 #tarjeta-exportable .te-marco-deco{
   position:absolute; inset:0; z-index:0; pointer-events:none;
   overflow:hidden;
@@ -617,41 +531,33 @@ input[type="text"]:focus{
   opacity:0.95;
 }
 
-/* Flores en las 4 esquinas — 110px → 330px (3×) */
 #tarjeta-exportable .te-flor{ width:330px; }
 #tarjeta-exportable .te-flor-tl{ top:-90px; left:-90px; transform:rotate(-20deg); }
 #tarjeta-exportable .te-flor-tr{ top:-96px; right:-70px; transform:rotate(18deg); }
 #tarjeta-exportable .te-flor-bl{ bottom:-90px; left:-80px; transform:rotate(16deg); }
 #tarjeta-exportable .te-flor-br{ bottom:-96px; right:-90px; transform:rotate(-16deg); }
 
-/* Globo + regalo, acento superior derecho — 60px → 180px / 54px → 162px */
 #tarjeta-exportable .te-globo{ width:180px; }
 #tarjeta-exportable .te-globo-tr{ top:14px; right:2px; transform:rotate(-8deg); }
 #tarjeta-exportable .te-regalo{ width:162px; }
 #tarjeta-exportable .te-regalo-tr{ top:96px; right:-24px; transform:rotate(12deg); }
 
-/* Globo + regalo, acento inferior derecho (más pequeños, contrapeso) — 42px → 126px */
 #tarjeta-exportable .te-globo-br{ width:126px; bottom:6px; right:-10px; transform:rotate(10deg); }
 
-/* Biberón, acento superior izquierdo — 52px → 156px */
 #tarjeta-exportable .te-biberon{ width:156px; }
 #tarjeta-exportable .te-biberon-tl{ top:16px; left:2px; transform:rotate(-12deg); }
 
-/* Osito, acento inferior izquierdo — 76px → 228px */
 #tarjeta-exportable .te-osito{ width:228px; }
 #tarjeta-exportable .te-osito-bl{ bottom:-30px; left:-30px; transform:rotate(8deg); }
 
-/* Chupón, acento inferior derecho — 40px → 120px */
 #tarjeta-exportable .te-chupon{ width:120px; bottom:26px; right:70px; transform:rotate(14deg); }
 
-/* Estrellas dispersas, sutiles, entre el borde y el contenido — 26px → 78px */
 #tarjeta-exportable .te-estrella{ width:78px; opacity:0.85; }
 #tarjeta-exportable .te-est-1{ top:60px; left:20px; transform:rotate(-14deg); }
 #tarjeta-exportable .te-est-2{ bottom:64px; right:8px; transform:rotate(18deg); }
 #tarjeta-exportable .te-est-3{ top:70px; right:96px; transform:rotate(22deg); }
 #tarjeta-exportable .te-est-4{ bottom:90px; left:96px; transform:rotate(-20deg); }
 
-/* Doble marco interior fino, como tarjeta de invitación */
 #tarjeta-exportable .te-borde{
   position:absolute; inset:18px;
   border: 2px solid var(--pink-mid);
@@ -768,13 +674,6 @@ footer.creditos::before{
   padding:20px;
 }
 
-/* ============================================================
-   INTRO DE BIENVENIDA
-   Pantalla completa breve, rosa pastel, con el nombre de la bebé.
-   Fade-in delicado + ligero zoom, con flores apareciendo en
-   secuencia y un brillo suave en la estrella. Desaparece sola o
-   al tocar/hacer clic.
-   ============================================================ */
 #intro-overlay{
   position:fixed; inset:0; z-index:999;
   display:flex; align-items:center; justify-content:center;
@@ -890,9 +789,6 @@ footer.creditos::before{
   .intro-sub, .intro-frase, .intro-loader, .intro-toque{ animation:none; opacity:1; }
 }
 
-/* ============================================================
-   AJUSTES RESPONSIVE MÓVIL
-   ============================================================ */
 @media (max-width:640px){
   .wrap{ padding: 20px 14px 50px; }
   .header-card{ padding: 28px 18px 24px; }
@@ -904,7 +800,6 @@ footer.creditos::before{
 
   .grid-productos{ grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap:12px; }
 
-  /* Steppers y botones más fáciles de tocar */
   .stepper{ padding:6px; }
   .stepper button{ width:38px; height:38px; font-size:19px; }
   .stepper .cant{ font-size:16px; min-width:26px; }
@@ -939,25 +834,16 @@ footer.creditos::before{
 
 <div class="floaters" id="floaters" aria-hidden="true"></div>
 
-<!-- ============================================================
-     CONTENEDOR DE RECORTE DE PÁGINA (.pagina-clip)
-     Envuelve el marco decorativo y el contenido para que ningún
-     sangrado de las decoraciones (offsets negativos, escala de
-     la escena de bienvenida) agrande el área de scroll y genere
-     una barra de desplazamiento adicional.
-     ============================================================ -->
 <div class="pagina-clip">
 
 <!-- ===================== MARCO DECORATIVO (PNG) ===================== -->
 <div class="marco-decorativo" aria-hidden="true">
 
-  <!-- ---- Esquinas (grandes, ancladas) ---- -->
   <img src="assets/flores 3.png" class="deco-flor flor-lg" style="top:-22px; left:-64px; transform:rotate(-34deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-lg" style="top:-48px; right:-48px; transform:rotate(14deg);" alt="">
   <img src="assets/flores 2.png" class="deco-flor flor-lg" style="bottom:-48px; left:-70px; transform:rotate(32deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-lg" style="bottom:-48px; right:-48px; transform:rotate(-12deg);" alt="">
 
-  <!-- ---- Flores: borde superior (horizontales, siguiendo el margen) ---- -->
   <img src="assets/flores 1.png" class="deco-flor flor-md" style="top:-42px; left:10%; transform:rotate(-6deg);" alt="">
   <img src="assets/flores 2.png" class="deco-flor flor-sm reducir-movil" style="top:-12px; left:25%; transform:rotate(7deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-md" style="top:-40px; left:40%; transform:rotate(-5deg);" alt="">
@@ -965,7 +851,6 @@ footer.creditos::before{
   <img src="assets/flores 2.png" class="deco-flor flor-md" style="top:-44px; left:70%; transform:rotate(-8deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-sm reducir-movil" style="top:-12px; left:85%; transform:rotate(6deg);" alt="">
 
-  <!-- ---- Flores: borde inferior (horizontales, siguiendo el margen) ---- -->
   <img src="assets/flores 2.png" class="deco-flor flor-md" style="bottom:-42px; left:8%; transform:rotate(8deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-sm reducir-movil" style="bottom:-10px; left:23%; transform:rotate(-7deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-md" style="bottom:-40px; left:38%; transform:rotate(6deg);" alt="">
@@ -973,7 +858,6 @@ footer.creditos::before{
   <img src="assets/flores 3.png" class="deco-flor flor-md" style="bottom:-44px; left:68%; transform:rotate(9deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-sm reducir-movil" style="bottom:-10px; left:83%; transform:rotate(-6deg);" alt="">
 
-  <!-- ---- Flores: borde izquierdo (solo escritorio), verticales pegadas al margen, ±15° a ±25° -->
   <img src="assets/flores 2.png" class="deco-flor flor-md solo-escritorio" style="top:6%; left:-96px; transform:rotate(18deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-sm solo-escritorio" style="top:20%; left:-78px; transform:rotate(-16deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-md solo-escritorio" style="top:34%; left:-96px; transform:rotate(22deg);" alt="">
@@ -982,7 +866,6 @@ footer.creditos::before{
   <img src="assets/flores 3.png" class="deco-flor flor-sm solo-escritorio" style="top:76%; left:-78px; transform:rotate(-24deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-md solo-escritorio" style="top:90%; left:-96px; transform:rotate(17deg);" alt="">
 
-  <!-- ---- Flores: borde derecho (solo escritorio), verticales pegadas al margen, ±15° a ±25° -->
   <img src="assets/flores 1.png" class="deco-flor flor-md solo-escritorio" style="top:4%; right:-96px; transform:rotate(-18deg);" alt="">
   <img src="assets/flores 3.png" class="deco-flor flor-sm solo-escritorio" style="top:18%; right:-78px; transform:rotate(16deg);" alt="">
   <img src="assets/flores 2.png" class="deco-flor flor-md solo-escritorio" style="top:32%; right:-96px; transform:rotate(-22deg);" alt="">
@@ -991,49 +874,30 @@ footer.creditos::before{
   <img src="assets/flores 2.png" class="deco-flor flor-sm solo-escritorio" style="top:74%; right:-78px; transform:rotate(24deg);" alt="">
   <img src="assets/flores 1.png" class="deco-flor flor-md solo-escritorio" style="top:88%; right:-96px; transform:rotate(-17deg);" alt="">
 
-  <!-- ============================================================
-       REGALOS + GLOBOS — cada globo se coloca justo encima de su
-       regalo (como si estuviera atado a él), con tamaño proporcional.
-       Ubicados en los huecos que dejan las flores, con rotaciones
-       variadas y tamaños agrandados.
-       ============================================================ -->
-
-  <!-- Par 1 — hueco superior izquierdo (entre flores 10% / 25%) — regalo mediano -->
   <img src="assets/regalo.png" class="deco-regalo regalo-md" style="top:6%; left:16%; transform:rotate(-24deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-md" style="top:-5%; left:18%; transform:rotate(-8deg);" alt="">
 
-  <!-- Par 2 — hueco superior centro (entre flores 40% / 55%) — regalo grande -->
   <img src="assets/regalo.png" class="deco-regalo regalo-lg" style="top:3%; left:45%; transform:rotate(18deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-lg" style="top:-9%; left:46%; transform:rotate(6deg);" alt="">
 
-  <!-- Par 3 — hueco superior derecho (entre flores 70% / 85%) — regalo pequeño -->
   <img src="assets/regalo.png" class="deco-regalo regalo-sm reducir-movil" style="top:8%; left:75%; transform:rotate(150deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-sm reducir-movil" style="top:-2%; left:77%; transform:rotate(-4deg);" alt="">
 
-  <!-- Par 4 — zona media izquierda (solo escritorio) — regalo grande -->
   <img src="assets/regalo.png" class="deco-regalo regalo-lg solo-escritorio" style="top:37%; left:-24px; transform:rotate(34deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-lg solo-escritorio" style="top:23%; left:-6px; transform:rotate(10deg);" alt="">
 
-  <!-- Par 5 — zona media derecha (solo escritorio) — regalo mediano -->
   <img src="assets/regalo.png" class="deco-regalo regalo-md solo-escritorio" style="top:43%; right:-16px; transform:rotate(-40deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-md solo-escritorio" style="top:29%; right:0px; transform:rotate(-12deg);" alt="">
 
-  <!-- Par 6 — zona media centro-izquierda (visible en todos los tamaños) — regalo pequeño -->
   <img src="assets/regalo.png" class="deco-regalo regalo-sm reducir-movil" style="top:58%; left:1%; transform:rotate(72deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-sm reducir-movil" style="top:45%; left:3%; transform:rotate(3deg);" alt="">
 
-  <!-- Par 7 — hueco inferior izquierdo (entre flores 8% / 23%) — regalo grande -->
   <img src="assets/regalo.png" class="deco-regalo regalo-lg" style="bottom:8%; left:13%; transform:rotate(105deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-lg" style="bottom:22%; left:15%; transform:rotate(-6deg);" alt="">
 
-  <!-- Par 8 — hueco inferior derecho (entre flores 68% / 83%) — regalo mediano -->
   <img src="assets/regalo.png" class="deco-regalo regalo-md" style="bottom:6%; left:73%; transform:rotate(-60deg);" alt="">
   <img src="assets/globos.png" class="deco-globos-atado atado-md" style="bottom:18%; left:74%; transform:rotate(8deg);" alt="">
 
-  <!-- ============================================================
-       BIBERONES Y OSITOS — agrandados y colocados entre las flores
-       (en los huecos del marco floral), no solo en los extremos.
-       ============================================================ -->
   <img src="assets/biberon.png" class="deco-objeto biberon-obj" style="top:1%; left:30%; transform:rotate(-10deg);" alt="">
   <img src="assets/chupon.png" class="deco-objeto reducir-movil" style="top:6%; left:90%; transform:rotate(12deg);" alt="">
   <img src="assets/osito.png" class="deco-objeto osito" style="top:1%; left:60%; transform:rotate(8deg);" alt="">
@@ -1045,7 +909,6 @@ footer.creditos::before{
   <img src="assets/biberon.png" class="deco-objeto biberon-obj solo-escritorio" style="bottom:4%; right:-30px; transform:rotate(14deg);" alt="">
   <img src="assets/chupon.png" class="deco-objeto reducir-movil" style="bottom:40%; right:2%; transform:rotate(-15deg);" alt="">
 
-  <!-- ---- Estrellas entre el borde y el contenido, rotaciones variadas ---- -->
   <img src="assets/estrellas.png" class="deco-estrella" style="top:5%; left:22%; transform:rotate(-18deg);" alt="">
   <img src="assets/estrellas.png" class="deco-estrella reducir-movil" style="top:12%; right:20%; transform:rotate(24deg);" alt="">
   <img src="assets/estrellas.png" class="deco-estrella" style="top:24%; left:3%; transform:rotate(12deg);" alt="">
@@ -1160,9 +1023,6 @@ footer.creditos::before{
 <script>
 /* ============================================================
    CONFIGURACIÓN DE FIREBASE
-   ⚠️ Reemplaza estos valores con la configuración del MISMO
-   proyecto Firebase que ya usa el cliente (el mismo que en
-   Quiniela Mundial 2026 / otras apps).
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyAtZpRO-Gy59prAeKjpaAs_p-qqxuM9jMo",
@@ -1176,14 +1036,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Documento aislado para esta wishlist, dentro de la colección "wishlist"
 const REF_DOC = db.collection('wishlist').doc('wishlist-bby-v1');
 
-/* ============================================================
-   PRODUCTOS — cantidades iniciales exactas solicitadas.
-   Coloca las imágenes reales en la carpeta: assets/<archivo>
-   Si una imagen falta, se muestra un placeholder rosado bonito.
-   ============================================================ */
 const PRODUCTOS = [
   { id: 'panalera',         nombre: 'Pañalera',                                   img: 'assets/panalera.jpg',        cantidadInicial: 1  },
   { id: 'carreola',         nombre: 'Carreola',                                   img: 'assets/carreola.jpg',        cantidadInicial: 1  },
@@ -1210,29 +1064,14 @@ const PRODUCTOS = [
   { id: 'juguetes',         nombre: 'Juguetes para bebé',                         img: 'assets/juguetes.jpg',        cantidadInicial: 3  },
 ];
 
-/* ============================================================
-   VERSIÓN DE RESET DE STOCK
-   Al cambiar este valor, el documento en Firestore se reinicia
-   una sola vez con el stock y las reservas en sus valores
-   originales (útil para arrancar limpio antes del evento).
-   Después de ese reinicio, los cambios de los invitados
-   persisten con normalidad.
-   ============================================================ */
 const VERSION_STOCK = 'reset-2026-08-07';
 
-/* ============================================================
-   ESTADO
-   ============================================================ */
 let nombreInvitado = '';
-let stockActual = {};          // { productoId: cantidadDisponible }
-let seleccion = {};            // { productoId: cantidadElegida }
+let stockActual = {};
+let seleccion = {};
 let unsubscribe = null;
-let ultimaConfirmacion = [];   // [{id, nombre, cantidad}] de la última reserva confirmada
+let ultimaConfirmacion = [];
 
-/* ============================================================
-   INTRO DE BIENVENIDA
-   Desaparece sola después de unos segundos o al tocar la pantalla.
-   ============================================================ */
 (function initIntro(){
   const overlay = document.getElementById('intro-overlay');
   if(!overlay) return;
@@ -1255,9 +1094,6 @@ let ultimaConfirmacion = [];   // [{id, nombre, cantidad}] de la última reserva
   });
 })();
 
-/* ============================================================
-   DECORACIÓN FLOTANTE (estrellas / corazones)
-   ============================================================ */
 (function crearFloaters(){
   const cont = document.getElementById('floaters');
   const simbolos = ['✦','♡','✿','★'];
@@ -1272,11 +1108,6 @@ let ultimaConfirmacion = [];   // [{id, nombre, cantidad}] de la última reserva
   }
 })();
 
-/* ============================================================
-   INICIALIZA / REINICIA EL DOCUMENTO EN FIRESTORE
-   Crea el documento si no existe, o lo reinicia con el stock
-   original si la VERSION_STOCK cambió desde la última vez.
-   ============================================================ */
 async function asegurarDocumentoInicial(){
   const snap = await REF_DOC.get();
   const stockInicial = {};
@@ -1301,9 +1132,6 @@ async function asegurarDocumentoInicial(){
   }
 }
 
-/* ============================================================
-   ESCUCHA EN TIEMPO REAL EL STOCK
-   ============================================================ */
 function escucharStock(){
   unsubscribe = REF_DOC.onSnapshot((snap) => {
     const data = snap.data();
@@ -1316,10 +1144,6 @@ function escucharStock(){
   });
 }
 
-/* ============================================================
-   RENDER DE PRODUCTOS
-   Los productos con stock disponible en 0 no se muestran.
-   ============================================================ */
 function renderProductos(){
   const grid = document.getElementById('grid-productos');
   const loader = document.getElementById('loader-productos');
@@ -1362,7 +1186,6 @@ function renderProductos(){
     grid.appendChild(card);
   });
 
-  // listeners de steppers
   grid.querySelectorAll('.btn-mas').forEach(btn => {
     btn.addEventListener('click', () => cambiarCantidad(btn.dataset.id, 1));
   });
@@ -1373,7 +1196,6 @@ function renderProductos(){
   actualizarResumen();
 }
 
-// Placeholder rosado bonito cuando falta la imagen del producto
 function crearPlaceholder(){
   const div = document.createElement('div');
   div.style.width = '100%';
@@ -1416,9 +1238,6 @@ function actualizarResumen(){
     : 'Selecciona al menos un producto para continuar';
 }
 
-/* ============================================================
-   CONFIRMAR RESERVA (transacción segura en Firestore)
-   ============================================================ */
 async function confirmarReserva(){
   const itemsElegidos = Object.entries(seleccion)
     .filter(([_, cant]) => cant > 0)
@@ -1437,7 +1256,6 @@ async function confirmarReserva(){
       const data = snap.data();
       const stock = { ...(data.stock || {}) };
 
-      // Verifica disponibilidad real (evita choques entre invitados simultáneos)
       for(const item of itemsElegidos){
         const disponible = stock[item.id] ?? 0;
         if(item.cantidad > disponible){
@@ -1445,7 +1263,6 @@ async function confirmarReserva(){
         }
       }
 
-      // Descuenta stock
       itemsElegidos.forEach(item => {
         stock[item.id] = (stock[item.id] ?? 0) - item.cantidad;
       });
@@ -1476,9 +1293,6 @@ async function confirmarReserva(){
   }
 }
 
-/* ============================================================
-   PANTALLA DE AGRADECIMIENTO
-   ============================================================ */
 function mostrarPantallaGracias(){
   document.getElementById('pantalla-wishlist').classList.add('oculto');
   const pantalla = document.getElementById('pantalla-gracias');
@@ -1495,7 +1309,6 @@ function mostrarPantallaGracias(){
     lista.appendChild(li);
   });
 
-  // Prepara la tarjeta exportable oculta
   document.getElementById('te-nombre').textContent = nombreInvitado;
   const teLista = document.getElementById('te-lista');
   teLista.innerHTML = '';
@@ -1510,82 +1323,106 @@ function mostrarPantallaGracias(){
 }
 
 /* ============================================================
-   GENERAR IMAGEN CON html2canvas + COMPARTIR / DESCARGAR
+   GENERAR IMAGEN CON html2canvas
+   En Android se usa una escala más moderada (2x) para evitar
+   canvases demasiado pesados que retrasen la generación y hagan
+   fallar el posterior navigator.share. Se espera un frame extra
+   (requestAnimationFrame) además del timeout, para dar tiempo a
+   que las imágenes ya cacheadas terminen de pintarse antes de
+   capturar.
    ============================================================ */
-async function generarImagenTarjeta(escala = 3){
+async function generarImagenTarjeta(escala){
   const nodo = document.getElementById('tarjeta-exportable');
-  await new Promise(r => setTimeout(r, 250));
+
+  // Espera a que las imágenes de la tarjeta (si no estaban ya cacheadas)
+  // terminen de cargar, para que el snapshot no salga en blanco/incompleto.
+  const imgs = Array.from(nodo.querySelectorAll('img'));
+  await Promise.all(imgs.map(img => {
+    if(img.complete) return Promise.resolve();
+    return new Promise(resolve => {
+      img.addEventListener('load', resolve, { once:true });
+      img.addEventListener('error', resolve, { once:true });
+    });
+  }));
+
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise(r => setTimeout(r, 200));
+
   const canvas = await html2canvas(nodo, {
     scale: escala,
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#fff6f9',
     logging: false,
-    imageTimeout: 30000,
+    imageTimeout: 15000,
     width: nodo.offsetWidth,
     height: nodo.offsetHeight,
     scrollX: 0,
     scrollY: 0
   });
-  return new Promise(resolve => {
-    canvas.toBlob(blob => resolve(blob), 'image/png', 0.9);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if(blob) resolve(blob);
+      else reject(new Error('No se pudo generar la imagen (blob vacío).'));
+    }, 'image/png', 0.92);
   });
 }
 
+/* ============================================================
+   COMPARTIR IMAGEN
+   Misma lógica en TODAS las plataformas (iPhone, PC y Android):
+   generar el blob, envolverlo en un File y pedir a
+   navigator.share que abra el menú nativo. Sin carreras de
+   tiempo (setTimeout race) contra el share: eso era lo que
+   provocaba que en Android, apenas unos segundos después de
+   abrir el picker, se disparara el fallback de descarga por
+   "timeout" aunque el share siguiera en curso.
+   En Android se usa una escala de captura más moderada (2x en
+   vez de 3x) porque los WebViews de Android suelen tener menos
+   memoria disponible para canvases grandes; esto es solo una
+   optimización de generación, no cambia el flujo de compartir.
+   ============================================================ */
 async function compartirImagen(){
   const btn = document.getElementById('btn-compartir');
-  btn.disabled = true;
   const textoOriginal = btn.textContent;
+  btn.disabled = true;
   btn.textContent = 'Generando...';
+
   const esAndroid = /Android/i.test(navigator.userAgent);
-  try {
-    // En Android usamos escala más baja para que no se quede colgado
+
+  try{
     const blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
     const archivo = new File([blob], 'baby-shower-esmeralda.png', { type: 'image/png' });
-    if (esAndroid) {
-      // Android: intentamos compartir directo, con tiempo límite
-      try {
-        const compartir = navigator.share({
-          files: [archivo],
-          title: 'Baby Shower de Esmeralda',
-          text: '¡Gracias por tu detalle para Esmeralda! 💕'
-        });
-        // Si en 4 segundos no responde, bajamos la imagen
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 4000)
-        );
-        await Promise.race([compartir, timeout]);
-      } catch (err) {
-        if (err.name === 'AbortError') return; // el usuario canceló
-        // Fallback: descargar
-        descargarBlob(blob);
-        alert('Imagen guardada.\nÁbrela desde Galería o Archivos y compártela por WhatsApp.');
-      }
+
+    if(navigator.canShare && navigator.canShare({ files: [archivo] })){
+      await navigator.share({
+        files: [archivo],
+        title: 'Baby Shower de Esmeralda',
+        text: '¡Gracias por tu detalle para Esmeralda! 💕'
+      });
     } else {
-      // iPhone y PC (lo que ya funciona bien)
-      if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-        await navigator.share({
-          files: [archivo],
-          title: 'Baby Shower de Esmeralda',
-          text: '¡Gracias por tu detalle para Esmeralda! 💕'
-        });
-      } else {
-        descargarBlob(blob);
-      }
+      // Este dispositivo no soporta compartir archivos: descarga directa.
+      descargarBlob(blob);
+      alert('Tu navegador no permite compartir imágenes directamente. Se descargó la imagen; ábrela desde tu galería para compartirla por WhatsApp.');
     }
-  } catch (err) {
-    if (err.name !== 'AbortError') {
-      console.error(err);
-      try {
-        const blob = await generarImagenTarjeta(2);
-        descargarBlob(blob);
-        alert('No se pudo compartir. Se descargó la imagen.');
-      } catch (e) {
-        console.error(e);
-        alert('No se pudo generar la imagen. Intenta de nuevo.');
-      }
+  }catch(err){
+    if(err && err.name === 'AbortError'){
+      // El usuario cerró el menú de compartir sin elegir nada: no es un error.
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+      return;
     }
-  } finally {
+    console.error(err);
+    try{
+      const blob = await generarImagenTarjeta(2);
+      descargarBlob(blob);
+      alert('No se pudo abrir el menú para compartir, así que descargamos la imagen. Ábrela desde tu galería o archivos para compartirla por WhatsApp.');
+    }catch(e){
+      console.error(e);
+      alert('No pudimos generar la imagen. Intenta de nuevo.');
+    }
+  }finally{
     btn.disabled = false;
     btn.textContent = textoOriginal;
   }
@@ -1597,7 +1434,8 @@ async function descargarImagen(){
   const textoOriginal = btn.textContent;
   btn.textContent = 'Generando...';
   try{
-    const blob = await generarImagenTarjeta();
+    const esAndroid = /Android/i.test(navigator.userAgent);
+    const blob = await generarImagenTarjeta(esAndroid ? 2 : 3);
     descargarBlob(blob);
   }catch(err){
     console.error(err);
@@ -1619,9 +1457,6 @@ function descargarBlob(blob){
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/* ============================================================
-   UTILIDADES DE UI
-   ============================================================ */
 function mostrarError(id, texto){
   const el = document.getElementById(id);
   el.textContent = texto;
@@ -1631,9 +1466,6 @@ function ocultarError(id){
   document.getElementById(id).classList.add('oculto');
 }
 
-/* ============================================================
-   EVENTOS PRINCIPALES
-   ============================================================ */
 document.getElementById('btn-continuar').addEventListener('click', async () => {
   const input = document.getElementById('input-nombre');
   const valor = input.value.trim();
@@ -1650,7 +1482,6 @@ document.getElementById('btn-continuar').addEventListener('click', async () => {
   document.getElementById('pantalla-nombre').classList.add('oculto');
   document.getElementById('pantalla-wishlist').classList.remove('oculto');
 
-  // Cambia la animación de las decoraciones a la variante de "zona de productos"
   document.body.classList.remove('escena-bienvenida');
   document.body.classList.add('escena-productos');
 
